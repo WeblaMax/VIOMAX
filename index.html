@@ -37,7 +37,8 @@ a{color:inherit}
 .intro-title b{display:block;font-family:var(--display);font-weight:400;letter-spacing:.12em;font-size:clamp(34px,min(9vh,12vw),92px);line-height:1}
 .intro-title span{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:#cfbba0}
 @keyframes titleIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.skip{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));background:rgba(0,0,0,.4);color:#cfbba0;border:1px solid rgba(207,187,160,.3);border-radius:99px;padding:6px 14px;font:500 13px var(--body);cursor:pointer}
+.skip,.snd{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));background:rgba(0,0,0,.4);color:#cfbba0;border:1px solid rgba(207,187,160,.3);border-radius:99px;padding:6px 14px;font:500 13px var(--body);cursor:pointer}
+.snd{right:auto;left:calc(14px + env(safe-area-inset-left,0px))}
 
 /* ---------- NAV ---------- */
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
@@ -149,6 +150,7 @@ dialog#story[open]{animation:pop .35s ease}
     <canvas id="play" aria-hidden="true"></canvas>
     <div class="intro-title"><b>VIO<i>MAX</i></b><span>Vioară · Lecții & Evenimente</span></div>
   </div>
+  <button class="snd" id="snd" type="button" aria-label="Sunet">♪ Sunet</button>
   <button class="skip" id="skip" type="button">Sari peste</button>
 </div>
 
@@ -272,6 +274,44 @@ dialog#story[open]{animation:pop .35s ease}
 <a class="fab" href="https://wa.me/37369228000" target="_blank" rel="noopener" aria-label="Scrie pe WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.8-1.1-4.6-4-4.8-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.3.5-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg></a>
 
 <script>
+
+// Sunet de vioară sintetizat (Web Audio), sincronizat cu arcușul: o notă nouă la fiecare schimbare de direcție.
+var NOTES=[220,293.66,349.23,440,392,349.23,329.63,293.66],STROKE=0.85;
+function violin(ac,dest,from,total){
+  var t0=ac.currentTime+0.03-from,end=total-from;
+  function curve(scale,floor){
+    var n=Math.max(2,Math.ceil(end*100)),c=new Float32Array(n);
+    for(var i=0;i<n;i++){var x=from+i/100;
+      var swell=floor+(1-floor)*Math.abs(Math.sin(Math.PI*x/STROKE));          // viteza arcușului
+      c[i]=scale*Math.min(1,x/0.7)*swell*Math.min(1,Math.max(0,(total-x)/0.9));}
+    return c;}
+  var amp=ac.createGain();amp.gain.value=0;
+  var lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2800;lp.Q.value=.6;
+  amp.connect(lp);var last=lp;
+  [[480,5,1.2],[1300,4,1.5],[2900,3,1.2]].forEach(function(p){var f=ac.createBiquadFilter();f.type='peaking';f.frequency.value=p[0];f.gain.value=p[1];f.Q.value=p[2];last.connect(f);last=f;});
+  var vib=ac.createOscillator();vib.frequency.value=5.6;
+  var vg=ac.createGain();vg.gain.setValueAtTime(0,ac.currentTime);vg.gain.linearRampToValueAtTime(9,ac.currentTime+1.2);vib.connect(vg);
+  var oscs=[-5,5].map(function(d){
+    var o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.detune.value=d;g.gain.value=.5;
+    vg.connect(o.detune);o.connect(g);g.connect(amp);
+    var k=Math.min(NOTES.length-1,Math.floor(from/STROKE));o.frequency.value=NOTES[k];
+    for(var j=k+1;j<NOTES.length;j++)o.frequency.setTargetAtTime(NOTES[j],t0+j*STROKE,0.04);
+    return o;});
+  amp.gain.setValueCurveAtTime(curve(.34,.16),ac.currentTime+0.03,end);
+  // zgomot fin de arcuș
+  var nb=ac.createBuffer(1,ac.sampleRate,ac.sampleRate),nd=nb.getChannelData(0);for(var i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  var ns=ac.createBufferSource();ns.buffer=nb;ns.loop=true;
+  var bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3600;bp.Q.value=.8;
+  var ng=ac.createGain();ng.gain.value=0;ng.gain.setValueCurveAtTime(curve(.02,.3),ac.currentTime+0.03,end);
+  ns.connect(bp);bp.connect(ng);ng.connect(lp);
+  // reverberație de sală
+  var ir=ac.createBuffer(2,Math.floor(ac.sampleRate*1.8),ac.sampleRate);
+  for(var c=0;c<2;c++){var d=ir.getChannelData(c);for(var q=0;q<d.length;q++)d[q]=(Math.random()*2-1)*Math.pow(1-q/d.length,2.5);}
+  var cv=ac.createConvolver();cv.buffer=ir;var wet=ac.createGain();wet.gain.value=.55;
+  last.connect(dest);last.connect(cv);cv.connect(wet);wet.connect(dest);
+  var stopAt=ac.currentTime+end+0.2;
+  vib.start();oscs.forEach(function(o){o.start();o.stop(stopAt);});ns.start();ns.stop(stopAt);vib.stop(stopAt);
+}
 function startPlaying(stage){
   var cv=document.getElementById('play'),img=stage.querySelector('img');
   var gl=cv.getContext('webgl',{premultipliedAlpha:false});
@@ -327,12 +367,34 @@ function startPlaying(stage){
 (function(){
   var intro=document.getElementById('intro'), stage=intro.querySelector('.stage');
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function close(){intro.classList.add('gone');document.body.style.overflow='';}
+  function close(){intro.classList.add('gone');document.body.style.overflow='';if(master){master.gain.setTargetAtTime(0,ac.currentTime,.15);setTimeout(function(){try{ac.close()}catch(x){}},1200);}}
   if(reduce){close();}else{
     document.body.style.overflow='hidden';
     startPlaying(stage);
     setTimeout(close,6400);
   }
+
+  // ---- sunet ----
+  var AC=window.AudioContext||window.webkitAudioContext,ac=null,master=null,sndOn=true,started=false,tStart=performance.now(),snd=document.getElementById('snd');
+  function label(){snd.textContent=ac&&ac.state!=='running'?'♪ Atinge pentru sunet':(sndOn?'♪ Sunet pornit':'♪ Sunet oprit');}
+  function audioStart(){
+    if(started||!ac||ac.state!=='running'||intro.classList.contains('gone'))return;
+    var e=(performance.now()-tStart)/1000;if(e>5.9)return;
+    started=true;try{violin(ac,master,e,6.4);}catch(x){}label();}
+  if(AC&&!reduce){
+    try{
+      ac=new AC();master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);
+      ac.onstatechange=function(){audioStart();label();};
+      audioStart();
+      ['pointerdown','keydown','touchend'].forEach(function(n){document.addEventListener(n,function h(){ac.resume().then(audioStart);document.removeEventListener(n,h,true);},true);});
+    }catch(x){ac=null;}
+  }
+  label();
+  snd.addEventListener('click',function(e){
+    e.stopPropagation();if(!ac)return;
+    if(ac.state!=='running'){ac.resume().then(audioStart);return;}
+    sndOn=!sndOn;master.gain.setTargetAtTime(sndOn?.9:0,ac.currentTime,.05);label();
+  });
   document.getElementById('skip').addEventListener('click',close);
 
 
