@@ -86,8 +86,6 @@ Sculeni, BuiucaniChișinău. Locul lecției îl alegem împreună, cum îți e m
 
 **La tine acasă**Vin eu la tine, fără drumuri în plus.
 
-**La mine**În sectorul Buiucani, zona Sculeni.
-
 **În studio**Pentru lecții sau repetiții înainte de eveniment.
 
 Contact
