@@ -22,7 +22,7 @@ Max zâmbind, cu vioara în mână
 
 Ce ofer
 
-## Două feluri de a asculta vioara
+## Două moduri de a simți vioara
 
 De la zero
 
