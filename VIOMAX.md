@@ -90,9 +90,9 @@ Sculeni, BuiucaniChișinău. Locul lecției îl alegem împreună, cum îți e m
 
 Contact
 
-## Hai să vorbim
+## Vrei mai multe detalii?
 
-Completează formularul și mesajul se deschide gata scris în WhatsApp. Sau sună direct.
+Completează formularul, iar mesajul se va deschide automat în WhatsApp, gata de trimis. Sau sună-mă direct la:
 
 +373 692 28 000
 
