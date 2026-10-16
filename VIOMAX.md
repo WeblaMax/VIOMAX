@@ -12,7 +12,7 @@ Violonist · Chișinău
 
 # Vioara, *aproape* de tine.
 
-Lecții de vioară pentru începători și avansați, plus muzică live care face din nunta, cumătria sau aniversarea ta un moment de ținut minte.
+Lecții de vioară pentru începători și avansați, plus muzică live care face din nunta, cumătria sau aniversarea ta un moment de neuitat.
 
 [Scrie pe WhatsApp](https://wa.me/37369228000?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20detalii.)
 
